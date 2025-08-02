@@ -20,8 +20,7 @@ interface LogEntry {
 }
 
 export default function GamepadDemo() {
-  const [gamepads, setGamepads] = useState<(GamepadData | null)[]>([null, null, null, null]);
-  const [activeGamepad, setActiveGamepad] = useState<GamepadData | null>(null);
+  const [gamepad, setGamepad] = useState<GamepadData | null>(null);
   const [eventLog, setEventLog] = useState<LogEntry[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const logContainerRef = useRef<HTMLDivElement>(null);
@@ -71,34 +70,22 @@ export default function GamepadDemo() {
 
   const pollGamepads = () => {
     const gamepadList = navigator.getGamepads();
-    const newGamepads: (GamepadData | null)[] = [null, null, null, null];
-    let hasActiveGamepad = false;
-
-    for (let i = 0; i < 4; i++) {
-      const gamepad = gamepadList[i];
-      if (gamepad) {
-        newGamepads[i] = {
-          id: gamepad.id,
-          index: gamepad.index,
-          mapping: gamepad.mapping,
-          timestamp: gamepad.timestamp,
-          connected: gamepad.connected,
-          buttons: Array.from(gamepad.buttons),
-          axes: Array.from(gamepad.axes)
-        };
-        
-        if (!hasActiveGamepad) {
-          setActiveGamepad(newGamepads[i]);
-          hasActiveGamepad = true;
-        }
-      }
+    const firstGamepad = gamepadList[0];
+    
+    if (firstGamepad) {
+      setGamepad({
+        id: firstGamepad.id,
+        index: firstGamepad.index,
+        mapping: firstGamepad.mapping,
+        timestamp: firstGamepad.timestamp,
+        connected: firstGamepad.connected,
+        buttons: Array.from(firstGamepad.buttons),
+        axes: Array.from(firstGamepad.axes)
+      });
+    } else {
+      setGamepad(null);
     }
 
-    if (!hasActiveGamepad) {
-      setActiveGamepad(null);
-    }
-
-    setGamepads(newGamepads);
     animationFrameRef.current = requestAnimationFrame(pollGamepads);
   };
 
@@ -136,9 +123,7 @@ export default function GamepadDemo() {
     }
   }, [eventLog, autoScroll]);
 
-  const connectedCount = gamepads.filter(gamepad => gamepad !== null).length;
-  const connectionStatus = connectedCount === 0 ? 'No Controllers' : 
-                          connectedCount === 1 ? '1 Controller' : `${connectedCount} Controllers`;
+  const connectionStatus = gamepad ? 'Controller Connected' : 'No Controller';
 
   return (
     <div className="bg-gray-900 text-gray-100 min-h-screen font-sans">
@@ -152,7 +137,7 @@ export default function GamepadDemo() {
             </div>
             <div className="flex items-center space-x-4">
               <div className="bg-gray-700 px-3 py-1 rounded-full text-sm">
-                <i className={`fas fa-circle mr-2 ${connectedCount > 0 ? 'text-green-400' : 'text-red-400'}`}></i>
+                <i className={`fas fa-circle mr-2 ${gamepad ? 'text-green-400' : 'text-red-400'}`}></i>
                 <span>{connectionStatus}</span>
               </div>
               <Button onClick={clearLogs} className="bg-primary hover:bg-blue-700">
@@ -170,29 +155,25 @@ export default function GamepadDemo() {
             <i className="fas fa-wifi mr-2 text-secondary"></i>
             Connection Status
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {gamepads.map((gamepad, index) => (
-              <Card key={index} className="bg-gray-800 border-gray-700">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-400">Controller {index + 1}</span>
-                    <div className={`w-3 h-3 rounded-full ${gamepad ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  </div>
-                  <p className="text-xs text-gray-500 truncate">
-                    {gamepad ? gamepad.id : 'Not Connected'}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card className="bg-gray-800 border-gray-700 max-w-md">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-400">Controller</span>
+                <div className={`w-3 h-3 rounded-full ${gamepad ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              </div>
+              <p className="text-xs text-gray-500 truncate">
+                {gamepad ? gamepad.id : 'Not Connected'}
+              </p>
+            </CardContent>
+          </Card>
         </section>
 
-        {/* Active Gamepad Display */}
-        {activeGamepad && (
+        {/* Gamepad Display */}
+        {gamepad && (
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
               <i className="fas fa-gamepad mr-2 text-accent"></i>
-              Active Controller - <span className="ml-2">{activeGamepad.id}</span>
+              Controller - <span className="ml-2">{gamepad.id}</span>
             </h2>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -207,13 +188,13 @@ export default function GamepadDemo() {
                       <div className="absolute left-8 top-16 w-12 h-12">
                         <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-0.5">
                           <div></div>
-                          <button className={`rounded-sm text-xs flex items-center justify-center ${activeGamepad.buttons[12]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>↑</button>
+                          <button className={`rounded-sm text-xs flex items-center justify-center ${gamepad.buttons[12]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>↑</button>
                           <div></div>
-                          <button className={`rounded-sm text-xs flex items-center justify-center ${activeGamepad.buttons[14]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>←</button>
+                          <button className={`rounded-sm text-xs flex items-center justify-center ${gamepad.buttons[14]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>←</button>
                           <div className="bg-gray-800 rounded-sm"></div>
-                          <button className={`rounded-sm text-xs flex items-center justify-center ${activeGamepad.buttons[15]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>→</button>
+                          <button className={`rounded-sm text-xs flex items-center justify-center ${gamepad.buttons[15]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>→</button>
                           <div></div>
-                          <button className={`rounded-sm text-xs flex items-center justify-center ${activeGamepad.buttons[13]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>↓</button>
+                          <button className={`rounded-sm text-xs flex items-center justify-center ${gamepad.buttons[13]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>↓</button>
                           <div></div>
                         </div>
                       </div>
@@ -224,8 +205,8 @@ export default function GamepadDemo() {
                           <div 
                             className="w-4 h-4 bg-secondary rounded-full absolute transition-all duration-100"
                             style={{
-                              left: `${50 + (activeGamepad.axes[0] || 0) * 25}%`,
-                              top: `${50 + (activeGamepad.axes[1] || 0) * 25}%`,
+                              left: `${50 + (gamepad.axes[0] || 0) * 25}%`,
+                              top: `${50 + (gamepad.axes[1] || 0) * 25}%`,
                               transform: 'translate(-50%, -50%)'
                             }}
                           ></div>
@@ -239,8 +220,8 @@ export default function GamepadDemo() {
                           <div 
                             className="w-4 h-4 bg-secondary rounded-full absolute transition-all duration-100"
                             style={{
-                              left: `${50 + (activeGamepad.axes[2] || 0) * 25}%`,
-                              top: `${50 + (activeGamepad.axes[3] || 0) * 25}%`,
+                              left: `${50 + (gamepad.axes[2] || 0) * 25}%`,
+                              top: `${50 + (gamepad.axes[3] || 0) * 25}%`,
                               transform: 'translate(-50%, -50%)'
                             }}
                           ></div>
@@ -252,31 +233,31 @@ export default function GamepadDemo() {
                       <div className="absolute right-8 top-16 w-12 h-12">
                         <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-0.5">
                           <div></div>
-                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${activeGamepad.buttons[3]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>Y</button>
+                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${gamepad.buttons[3]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>Y</button>
                           <div></div>
-                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${activeGamepad.buttons[2]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>X</button>
+                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${gamepad.buttons[2]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>X</button>
                           <div></div>
-                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${activeGamepad.buttons[1]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>B</button>
+                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${gamepad.buttons[1]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>B</button>
                           <div></div>
-                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${activeGamepad.buttons[0]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>A</button>
+                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${gamepad.buttons[0]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>A</button>
                           <div></div>
                         </div>
                       </div>
 
                       {/* Shoulder Buttons */}
                       <div className="absolute left-4 top-2 flex space-x-1">
-                        <button className={`px-2 py-1 rounded text-xs ${activeGamepad.buttons[4]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>LB</button>
-                        <button className={`px-2 py-1 rounded text-xs ${activeGamepad.buttons[6]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>LT</button>
+                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[4]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>LB</button>
+                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[6]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>LT</button>
                       </div>
                       <div className="absolute right-4 top-2 flex space-x-1">
-                        <button className={`px-2 py-1 rounded text-xs ${activeGamepad.buttons[7]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>RT</button>
-                        <button className={`px-2 py-1 rounded text-xs ${activeGamepad.buttons[5]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>RB</button>
+                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[7]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>RT</button>
+                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[5]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>RB</button>
                       </div>
 
                       {/* Center Buttons */}
                       <div className="absolute left-1/2 top-8 transform -translate-x-1/2 flex space-x-4">
-                        <button className={`px-2 py-1 rounded text-xs ${activeGamepad.buttons[8]?.pressed ? 'bg-secondary' : 'bg-gray-600'}`}>SELECT</button>
-                        <button className={`px-2 py-1 rounded text-xs ${activeGamepad.buttons[9]?.pressed ? 'bg-secondary' : 'bg-gray-600'}`}>START</button>
+                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[8]?.pressed ? 'bg-secondary' : 'bg-gray-600'}`}>SELECT</button>
+                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[9]?.pressed ? 'bg-secondary' : 'bg-gray-600'}`}>START</button>
                       </div>
                     </div>
                   </div>
@@ -293,7 +274,7 @@ export default function GamepadDemo() {
                       Buttons
                     </h3>
                     <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                      {activeGamepad.buttons.map((button, index) => (
+                      {gamepad.buttons.map((button, index) => (
                         <div key={index} className={`flex justify-between items-center py-1 px-2 rounded text-sm ${button.pressed ? 'bg-primary' : 'bg-gray-700'}`}>
                           <span>{getButtonName(index)}</span>
                           <span className="font-mono text-xs text-gray-300">{button.value.toFixed(3)}</span>
@@ -311,7 +292,7 @@ export default function GamepadDemo() {
                       Analog Axes
                     </h3>
                     <div className="space-y-2">
-                      {activeGamepad.axes.map((axis, index) => (
+                      {gamepad.axes.map((axis, index) => (
                         <div key={index} className="flex items-center space-x-3">
                           <span className="text-sm w-20">{getAxisName(index)}:</span>
                           <div className="flex-1 bg-gray-700 rounded-full h-2 relative">
@@ -337,19 +318,19 @@ export default function GamepadDemo() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-400">ID:</span>
-                        <span className="font-mono text-xs truncate max-w-48">{activeGamepad.id}</span>
+                        <span className="font-mono text-xs truncate max-w-48">{gamepad.id}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Mapping:</span>
-                        <span className="font-mono text-xs">{activeGamepad.mapping}</span>
+                        <span className="font-mono text-xs">{gamepad.mapping}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Timestamp:</span>
-                        <span className="font-mono text-xs">{activeGamepad.timestamp.toFixed(3)}</span>
+                        <span className="font-mono text-xs">{gamepad.timestamp.toFixed(3)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Index:</span>
-                        <span className="font-mono text-xs">{activeGamepad.index}</span>
+                        <span className="font-mono text-xs">{gamepad.index}</span>
                       </div>
                     </div>
                   </CardContent>
