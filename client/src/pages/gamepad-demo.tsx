@@ -9,7 +9,6 @@ interface GamepadData {
   mapping: string;
   timestamp: number;
   connected: boolean;
-  buttons: GamepadButton[];
   axes: number[];
 }
 
@@ -50,22 +49,24 @@ export default function GamepadDemo() {
     setEventLog([]);
   };
 
-  const getButtonName = (index: number): string => {
-    const buttonNames: { [key: number]: string } = {
-      0: 'A', 1: 'B', 2: 'X', 3: 'Y',
-      4: 'LB', 5: 'RB', 6: 'LT', 7: 'RT',
-      8: 'SELECT', 9: 'START', 10: 'L3', 11: 'R3',
-      12: 'UP', 13: 'DOWN', 14: 'LEFT', 15: 'RIGHT'
-    };
-    return buttonNames[index] || `Button ${index}`;
-  };
-
   const getAxisName = (index: number): string => {
     const axisNames: { [key: number]: string } = {
-      0: 'Left Stick X', 1: 'Left Stick Y',
-      2: 'Right Stick X', 3: 'Right Stick Y'
+      0: 'Roll',      // Right Stick Left:-1 Right:+1
+      1: 'Pitch',     // Right Stick Down:-1 Up:+1
+      3: 'Throttle',  // Left Stick Down:-1 Up:+1
+      4: 'Yaw'        // Left Stick Left:-1 Right:+1
     };
     return axisNames[index] || `Axis ${index}`;
+  };
+
+  const getAxisDescription = (index: number): string => {
+    const descriptions: { [key: number]: string } = {
+      0: 'Right Stick Left:-1 Right:+1',
+      1: 'Right Stick Down:-1 Up:+1', 
+      3: 'Left Stick Down:-1 Up:+1',
+      4: 'Left Stick Left:-1 Right:+1'
+    };
+    return descriptions[index] || '';
   };
 
   const pollGamepads = () => {
@@ -79,7 +80,6 @@ export default function GamepadDemo() {
         mapping: firstGamepad.mapping,
         timestamp: firstGamepad.timestamp,
         connected: firstGamepad.connected,
-        buttons: Array.from(firstGamepad.buttons),
         axes: Array.from(firstGamepad.axes)
       });
     } else {
@@ -91,14 +91,14 @@ export default function GamepadDemo() {
 
   useEffect(() => {
     // Initialize gamepad API
-    addLogEntry('INFO', 'Gamepad API initialized. Waiting for controller connection...');
+    addLogEntry('INFO', 'Flight Control API initialized. Waiting for controller connection...');
 
     const handleGamepadConnected = (event: GamepadEvent) => {
-      addLogEntry('CONNECT', `Gamepad connected: ${event.gamepad.id} (index: ${event.gamepad.index})`);
+      addLogEntry('CONNECT', `Flight controller connected: ${event.gamepad.id} (index: ${event.gamepad.index})`);
     };
 
     const handleGamepadDisconnected = (event: GamepadEvent) => {
-      addLogEntry('DISCONNECT', `Gamepad disconnected: ${event.gamepad.id} (index: ${event.gamepad.index})`);
+      addLogEntry('DISCONNECT', `Flight controller disconnected: ${event.gamepad.id} (index: ${event.gamepad.index})`);
     };
 
     window.addEventListener('gamepadconnected', handleGamepadConnected);
@@ -123,7 +123,7 @@ export default function GamepadDemo() {
     }
   }, [eventLog, autoScroll]);
 
-  const connectionStatus = gamepad ? 'Controller Connected' : 'No Controller';
+  const connectionStatus = gamepad ? 'Flight Controller Connected' : 'No Controller';
 
   return (
     <div className="bg-gray-900 text-gray-100 min-h-screen font-sans">
@@ -132,8 +132,8 @@ export default function GamepadDemo() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <i className="fas fa-gamepad text-primary text-2xl"></i>
-              <h1 className="text-2xl font-bold text-white">Gamepad API Demo</h1>
+              <i className="fas fa-plane text-primary text-2xl"></i>
+              <h1 className="text-2xl font-bold text-white">Flight Control Demo</h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="bg-gray-700 px-3 py-1 rounded-full text-sm">
@@ -158,7 +158,7 @@ export default function GamepadDemo() {
           <Card className="bg-gray-800 border-gray-700 max-w-md">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-400">Controller</span>
+                <span className="text-sm font-medium text-gray-400">Flight Controller</span>
                 <div className={`w-3 h-3 rounded-full ${gamepad ? 'bg-green-500' : 'bg-red-500'}`}></div>
               </div>
               <p className="text-xs text-gray-500 truncate">
@@ -168,175 +168,187 @@ export default function GamepadDemo() {
           </Card>
         </section>
 
-        {/* Gamepad Display */}
+        {/* Flight Control Display */}
         {gamepad && (
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <i className="fas fa-gamepad mr-2 text-accent"></i>
-              Controller - <span className="ml-2">{gamepad.id}</span>
+              <i className="fas fa-plane mr-2 text-accent"></i>
+              Flight Controller - <span className="ml-2">{gamepad.id}</span>
             </h2>
             
+            {/* Flight Control Axes Display */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Gamepad Visual Representation */}
+              {/* Left Stick - Throttle & Yaw */}
               <Card className="bg-gray-800 border-gray-700">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4">Controller Layout</h3>
-                  <div className="relative">
-                    {/* Controller Body */}
-                    <div className="mx-auto w-80 h-48 bg-gray-700 rounded-3xl relative border-2 border-gray-600">
-                      {/* D-Pad */}
-                      <div className="absolute left-8 top-16 w-12 h-12">
-                        <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-0.5">
-                          <div></div>
-                          <button className={`rounded-sm text-xs flex items-center justify-center ${gamepad.buttons[12]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>↑</button>
-                          <div></div>
-                          <button className={`rounded-sm text-xs flex items-center justify-center ${gamepad.buttons[14]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>←</button>
-                          <div className="bg-gray-800 rounded-sm"></div>
-                          <button className={`rounded-sm text-xs flex items-center justify-center ${gamepad.buttons[15]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>→</button>
-                          <div></div>
-                          <button className={`rounded-sm text-xs flex items-center justify-center ${gamepad.buttons[13]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>↓</button>
-                          <div></div>
+                  <h3 className="text-lg font-medium mb-4 flex items-center">
+                    <i className="fas fa-gamepad mr-2 text-primary"></i>
+                    Left Stick - Throttle & Yaw
+                  </h3>
+                  <div className="space-y-6">
+                    {/* Throttle - Axis 3 */}
+                    {gamepad.axes[3] !== undefined && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-secondary">Throttle (Axis 3)</span>
+                          <span className="font-mono text-xs text-gray-400">{gamepad.axes[3].toFixed(3)}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mb-2">Down: -1 → Up: +1</div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xs w-8">-1</span>
+                          <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
+                            <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
+                            <div 
+                              className="bg-secondary h-4 rounded-full transition-all duration-100 absolute" 
+                              style={{ 
+                                left: gamepad.axes[3] >= 0 ? '50%' : `${50 + (gamepad.axes[3] * 50)}%`,
+                                width: `${Math.abs(gamepad.axes[3]) * 50}%`
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-xs w-8">+1</span>
                         </div>
                       </div>
-
-                      {/* Left Analog Stick */}
-                      <div className="absolute left-16 bottom-8">
-                        <div className="w-8 h-8 bg-gray-600 rounded-full border-2 border-gray-500 relative">
-                          <div 
-                            className="w-4 h-4 bg-secondary rounded-full absolute transition-all duration-100"
-                            style={{
-                              left: `${50 + (gamepad.axes[0] || 0) * 25}%`,
-                              top: `${50 + (gamepad.axes[1] || 0) * 25}%`,
-                              transform: 'translate(-50%, -50%)'
-                            }}
-                          ></div>
+                    )}
+                    
+                    {/* Yaw - Axis 4 */}
+                    {gamepad.axes[4] !== undefined && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-accent">Yaw (Axis 4)</span>
+                          <span className="font-mono text-xs text-gray-400">{gamepad.axes[4].toFixed(3)}</span>
                         </div>
-                        <p className="text-xs text-center mt-1 text-gray-400">L</p>
-                      </div>
-
-                      {/* Right Analog Stick */}
-                      <div className="absolute right-16 bottom-8">
-                        <div className="w-8 h-8 bg-gray-600 rounded-full border-2 border-gray-500 relative">
-                          <div 
-                            className="w-4 h-4 bg-secondary rounded-full absolute transition-all duration-100"
-                            style={{
-                              left: `${50 + (gamepad.axes[2] || 0) * 25}%`,
-                              top: `${50 + (gamepad.axes[3] || 0) * 25}%`,
-                              transform: 'translate(-50%, -50%)'
-                            }}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-center mt-1 text-gray-400">R</p>
-                      </div>
-
-                      {/* Face Buttons */}
-                      <div className="absolute right-8 top-16 w-12 h-12">
-                        <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-0.5">
-                          <div></div>
-                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${gamepad.buttons[3]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>Y</button>
-                          <div></div>
-                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${gamepad.buttons[2]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>X</button>
-                          <div></div>
-                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${gamepad.buttons[1]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>B</button>
-                          <div></div>
-                          <button className={`rounded-full text-xs font-bold flex items-center justify-center ${gamepad.buttons[0]?.pressed ? 'bg-accent' : 'bg-gray-600'}`}>A</button>
-                          <div></div>
+                        <div className="text-xs text-gray-500 mb-2">Left: -1 → Right: +1</div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xs w-8">-1</span>
+                          <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
+                            <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
+                            <div 
+                              className="bg-accent h-4 rounded-full transition-all duration-100 absolute" 
+                              style={{ 
+                                left: gamepad.axes[4] >= 0 ? '50%' : `${50 + (gamepad.axes[4] * 50)}%`,
+                                width: `${Math.abs(gamepad.axes[4]) * 50}%`
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-xs w-8">+1</span>
                         </div>
                       </div>
-
-                      {/* Shoulder Buttons */}
-                      <div className="absolute left-4 top-2 flex space-x-1">
-                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[4]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>LB</button>
-                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[6]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>LT</button>
-                      </div>
-                      <div className="absolute right-4 top-2 flex space-x-1">
-                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[7]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>RT</button>
-                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[5]?.pressed ? 'bg-primary' : 'bg-gray-600'}`}>RB</button>
-                      </div>
-
-                      {/* Center Buttons */}
-                      <div className="absolute left-1/2 top-8 transform -translate-x-1/2 flex space-x-4">
-                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[8]?.pressed ? 'bg-secondary' : 'bg-gray-600'}`}>SELECT</button>
-                        <button className={`px-2 py-1 rounded text-xs ${gamepad.buttons[9]?.pressed ? 'bg-secondary' : 'bg-gray-600'}`}>START</button>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Real-time Data */}
-              <div className="space-y-4">
-                {/* Buttons Data */}
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardContent className="p-4">
-                    <h3 className="text-lg font-medium mb-3 flex items-center">
-                      <i className="fas fa-mouse-pointer mr-2 text-primary"></i>
-                      Buttons
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                      {gamepad.buttons.map((button, index) => (
-                        <div key={index} className={`flex justify-between items-center py-1 px-2 rounded text-sm ${button.pressed ? 'bg-primary' : 'bg-gray-700'}`}>
-                          <span>{getButtonName(index)}</span>
-                          <span className="font-mono text-xs text-gray-300">{button.value.toFixed(3)}</span>
+              {/* Right Stick - Roll & Pitch */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-medium mb-4 flex items-center">
+                    <i className="fas fa-gamepad mr-2 text-primary"></i>
+                    Right Stick - Roll & Pitch
+                  </h3>
+                  <div className="space-y-6">
+                    {/* Roll - Axis 0 */}
+                    {gamepad.axes[0] !== undefined && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-primary">Roll (Axis 0)</span>
+                          <span className="font-mono text-xs text-gray-400">{gamepad.axes[0].toFixed(3)}</span>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Axes Data */}
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardContent className="p-4">
-                    <h3 className="text-lg font-medium mb-3 flex items-center">
-                      <i className="fas fa-arrows-alt mr-2 text-secondary"></i>
-                      Analog Axes
-                    </h3>
-                    <div className="space-y-2">
-                      {gamepad.axes.map((axis, index) => (
-                        <div key={index} className="flex items-center space-x-3">
-                          <span className="text-sm w-20">{getAxisName(index)}:</span>
-                          <div className="flex-1 bg-gray-700 rounded-full h-2 relative">
+                        <div className="text-xs text-gray-500 mb-2">Left: -1 → Right: +1</div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xs w-8">-1</span>
+                          <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
+                            <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
                             <div 
-                              className="bg-secondary h-2 rounded-full transition-all duration-100" 
-                              style={{ width: `${Math.abs(axis) * 100}%` }}
+                              className="bg-primary h-4 rounded-full transition-all duration-100 absolute" 
+                              style={{ 
+                                left: gamepad.axes[0] >= 0 ? '50%' : `${50 + (gamepad.axes[0] * 50)}%`,
+                                width: `${Math.abs(gamepad.axes[0]) * 50}%`
+                              }}
                             ></div>
                           </div>
-                          <span className="font-mono text-xs text-gray-400 w-16">{axis.toFixed(3)}</span>
+                          <span className="text-xs w-8">+1</span>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Gamepad Metadata */}
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardContent className="p-4">
-                    <h3 className="text-lg font-medium mb-3 flex items-center">
-                      <i className="fas fa-info-circle mr-2 text-accent"></i>
-                      Metadata
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">ID:</span>
-                        <span className="font-mono text-xs truncate max-w-48">{gamepad.id}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Mapping:</span>
-                        <span className="font-mono text-xs">{gamepad.mapping}</span>
+                    )}
+                    
+                    {/* Pitch - Axis 1 */}
+                    {gamepad.axes[1] !== undefined && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-secondary">Pitch (Axis 1)</span>
+                          <span className="font-mono text-xs text-gray-400">{gamepad.axes[1].toFixed(3)}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mb-2">Down: -1 → Up: +1</div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xs w-8">-1</span>
+                          <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
+                            <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
+                            <div 
+                              className="bg-secondary h-4 rounded-full transition-all duration-100 absolute" 
+                              style={{ 
+                                left: gamepad.axes[1] >= 0 ? '50%' : `${50 + (gamepad.axes[1] * 50)}%`,
+                                width: `${Math.abs(gamepad.axes[1]) * 50}%`
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-xs w-8">+1</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Timestamp:</span>
-                        <span className="font-mono text-xs">{gamepad.timestamp.toFixed(3)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Index:</span>
-                        <span className="font-mono text-xs">{gamepad.index}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+            
+            {/* Combined Axes Summary */}
+            <Card className="bg-gray-800 border-gray-700 mt-6">
+              <CardContent className="p-4">
+                <h3 className="text-lg font-medium mb-3 flex items-center">
+                  <i className="fas fa-arrows-alt mr-2 text-secondary"></i>
+                  Flight Control Axes Summary
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[0, 1, 3, 4].map((axisIndex) => (
+                    gamepad.axes[axisIndex] !== undefined && (
+                      <div key={axisIndex} className="bg-gray-700 p-3 rounded">
+                        <div className="text-sm font-medium text-white mb-1">{getAxisName(axisIndex)}</div>
+                        <div className="text-xs text-gray-400 mb-2">{getAxisDescription(axisIndex)}</div>
+                        <div className="font-mono text-lg text-center">{gamepad.axes[axisIndex].toFixed(3)}</div>
+                      </div>
+                    )
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Gamepad Metadata */}
+            <Card className="bg-gray-800 border-gray-700 mt-6">
+              <CardContent className="p-4">
+                <h3 className="text-lg font-medium mb-3 flex items-center">
+                  <i className="fas fa-info-circle mr-2 text-accent"></i>
+                  Controller Metadata
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="bg-gray-700 p-3 rounded">
+                    <div className="text-gray-400 mb-1">ID:</div>
+                    <div className="font-mono text-xs truncate">{gamepad.id}</div>
+                  </div>
+                  <div className="bg-gray-700 p-3 rounded">
+                    <div className="text-gray-400 mb-1">Mapping:</div>
+                    <div className="font-mono text-xs">{gamepad.mapping}</div>
+                  </div>
+                  <div className="bg-gray-700 p-3 rounded">
+                    <div className="text-gray-400 mb-1">Timestamp:</div>
+                    <div className="font-mono text-xs">{gamepad.timestamp.toFixed(3)}</div>
+                  </div>
+                  <div className="bg-gray-700 p-3 rounded">
+                    <div className="text-gray-400 mb-1">Index:</div>
+                    <div className="font-mono text-xs">{gamepad.index}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </section>
         )}
 
@@ -349,7 +361,7 @@ export default function GamepadDemo() {
           <Card className="bg-gray-800 border-gray-700">
             <div className="p-4 border-b border-gray-700">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">Real-time gamepad events will appear here</p>
+                <p className="text-sm text-gray-400">Real-time flight controller events will appear here</p>
                 <div className="flex items-center space-x-2">
                   <label className="flex items-center space-x-2 text-sm">
                     <Checkbox 
@@ -380,53 +392,33 @@ export default function GamepadDemo() {
           </Card>
         </section>
 
-        {/* API Information */}
+        {/* Flight Control Information */}
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <i className="fas fa-code mr-2 text-primary"></i>
-            API Information
+            <i className="fas fa-info-circle mr-2 text-primary"></i>
+            Flight Control Mapping
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="p-4">
-                <h3 className="text-lg font-medium mb-3">Supported Events</h3>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center space-x-2">
-                    <i className="fas fa-check text-secondary"></i>
-                    <span><code className="bg-gray-700 px-2 py-1 rounded">gamepadconnected</code></span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <i className="fas fa-check text-secondary"></i>
-                    <span><code className="bg-gray-700 px-2 py-1 rounded">gamepaddisconnected</code></span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="p-4">
-                <h3 className="text-lg font-medium mb-3">Browser Support</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span>Chrome:</span>
-                    <span className="text-secondary">✓ Supported</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Firefox:</span>
-                    <span className="text-secondary">✓ Supported</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Safari:</span>
-                    <span className="text-yellow-500">⚠ Limited</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Edge:</span>
-                    <span className="text-secondary">✓ Supported</span>
-                  </div>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-4">
+              <h3 className="text-lg font-medium mb-3">Axis Assignments</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium text-secondary mb-2">Left Stick</h4>
+                  <ul className="space-y-1 text-sm text-gray-300">
+                    <li><code className="bg-gray-700 px-2 py-1 rounded">Axis 3</code> - Throttle (Down:-1 Up:+1)</li>
+                    <li><code className="bg-gray-700 px-2 py-1 rounded">Axis 4</code> - Yaw (Left:-1 Right:+1)</li>
+                  </ul>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div>
+                  <h4 className="text-sm font-medium text-accent mb-2">Right Stick</h4>
+                  <ul className="space-y-1 text-sm text-gray-300">
+                    <li><code className="bg-gray-700 px-2 py-1 rounded">Axis 0</code> - Roll (Left:-1 Right:+1)</li>
+                    <li><code className="bg-gray-700 px-2 py-1 rounded">Axis 1</code> - Pitch (Down:-1 Up:+1)</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </section>
       </main>
 
@@ -434,10 +426,10 @@ export default function GamepadDemo() {
       <footer className="bg-gray-800 border-t border-gray-700 py-6 mt-12">
         <div className="container mx-auto px-4 text-center">
           <p className="text-gray-400 text-sm">
-            Gamepad API Demo - Connect a gamepad to see real-time data
+            Flight Control Gamepad Demo - Connect a gamepad to see real-time axis data
           </p>
           <p className="text-gray-500 text-xs mt-2">
-            Built with React and the native Gamepad API
+            Throttle, Yaw, Roll, and Pitch axes only
           </p>
         </div>
       </footer>
