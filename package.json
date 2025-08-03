@@ -1,5 +1,5 @@
 {
-  "name": "gamepad-controller",
+  "name": "@greact/controller",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",

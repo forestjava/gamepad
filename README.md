@@ -1,4 +1,4 @@
-# Gamepad Controller
+# @greact/controller
 
 A React library for easy gamepad/controller integration in React applications. Provides real-time access to controller axes data with a simple hook-based API.
 
@@ -14,13 +14,13 @@ A React library for easy gamepad/controller integration in React applications. P
 ## Installation
 
 ```bash
-npm install gamepad-controller
+npm install @greact/controller
 ```
 
 ## Quick Start
 
 ```tsx
-import { ControllerProvider, useController } from 'gamepad-controller';
+import { ControllerProvider, useController } from '@greact/controller';
 
 function App() {
   return (
@@ -57,7 +57,7 @@ function FlightSimulator() {
 React Context Provider that manages controller state and polling.
 
 ```tsx
-import { ControllerProvider } from 'gamepad-controller';
+import { ControllerProvider } from '@greact/controller';
 
 <ControllerProvider>
   {/* Your app components */}
