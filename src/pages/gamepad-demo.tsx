@@ -1,52 +1,10 @@
-import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
-interface GamepadData {
-  id: string;
-  index: number;
-  mapping: string;
-  timestamp: number;
-  connected: boolean;
-  axes: number[];
-}
+import { useController } from "@/hooks/useController";
 
 export default function GamepadDemo() {
-  const [gamepad, setGamepad] = useState<GamepadData | null>(null);
-  const animationFrameRef = useRef<number>();
+  const { controller, axes, metadata } = useController();
 
-  const pollGamepads = () => {
-    const gamepadList = navigator.getGamepads();
-    const firstGamepad = gamepadList[0];
-
-    if (firstGamepad) {
-      setGamepad({
-        id: firstGamepad.id,
-        index: firstGamepad.index,
-        mapping: firstGamepad.mapping,
-        timestamp: firstGamepad.timestamp,
-        connected: firstGamepad.connected,
-        axes: Array.from(firstGamepad.axes),
-      });
-    } else {
-      setGamepad(null);
-    }
-
-    animationFrameRef.current = requestAnimationFrame(pollGamepads);
-  };
-
-  useEffect(() => {
-    // Start polling
-    animationFrameRef.current = requestAnimationFrame(pollGamepads);
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
-  const connectionStatus = gamepad
+  const connectionStatus = controller
     ? "Flight Controller Connected"
     : "No Controller";
 
@@ -65,7 +23,7 @@ export default function GamepadDemo() {
             <div className="flex items-center space-x-4">
               <div className="bg-gray-700 px-3 py-1 rounded-full text-sm">
                 <i
-                  className={`fas fa-circle mr-2 ${gamepad ? "text-green-400" : "text-red-400"}`}
+                  className={`fas fa-circle mr-2 ${controller ? "text-green-400" : "text-red-400"}`}
                 ></i>
                 <span>{connectionStatus}</span>
               </div>
@@ -88,22 +46,22 @@ export default function GamepadDemo() {
                   Flight Controller
                 </span>
                 <div
-                  className={`w-3 h-3 rounded-full ${gamepad ? "bg-green-500" : "bg-red-500"}`}
+                  className={`w-3 h-3 rounded-full ${controller ? "bg-green-500" : "bg-red-500"}`}
                 ></div>
               </div>
               <p className="text-xs text-gray-500 truncate">
-                {gamepad ? gamepad.id : "Not Connected"}
+                {controller ? controller.id : "Not Connected"}
               </p>
             </CardContent>
           </Card>
         </section>
 
         {/* Flight Control Display */}
-        {gamepad && (
+        {controller && (
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4 flex items-center">
               <i className="fas fa-plane mr-2 text-accent"></i>
-              Flight Controller - <span className="ml-2">{gamepad.id}</span>
+              Flight Controller - <span className="ml-2">{controller.id}</span>
             </h2>
 
             {/* Flight Control Axes Display */}
@@ -117,66 +75,62 @@ export default function GamepadDemo() {
                   </h3>
                   <div className="space-y-6">
                     {/* Throttle - Axis 3 */}
-                    {gamepad.axes[3] !== undefined && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-secondary">
-                            Throttle
-                          </span>
-                          <span className="font-mono text-xs text-gray-400">
-                            {gamepad.axes[3].toFixed(3)}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xs w-8">-1</span>
-                          <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
-                            <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
-                            <div
-                              className="bg-secondary h-4 rounded-full transition-all duration-100 absolute"
-                              style={{
-                                left:
-                                  gamepad.axes[3] >= 0
-                                    ? "50%"
-                                    : `${50 + gamepad.axes[3] * 50}%`,
-                                width: `${Math.abs(gamepad.axes[3]) * 50}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs w-8">+1</span>
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-secondary">
+                          Throttle
+                        </span>
+                        <span className="font-mono text-xs text-gray-400">
+                          {axes.throttle.toFixed(3)}
+                        </span>
                       </div>
-                    )}
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs w-8">-1</span>
+                        <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
+                          <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
+                          <div
+                            className="bg-secondary h-4 rounded-full transition-all duration-100 absolute"
+                            style={{
+                              left:
+                                axes.throttle >= 0
+                                  ? "50%"
+                                  : `${50 + axes.throttle * 50}%`,
+                              width: `${Math.abs(axes.throttle) * 50}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-xs w-8">+1</span>
+                      </div>
+                    </div>
 
                     {/* Yaw - Axis 4 */}
-                    {gamepad.axes[4] !== undefined && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-accent">
-                            Yaw (Axis 4)
-                          </span>
-                          <span className="font-mono text-xs text-gray-400">
-                            {gamepad.axes[4].toFixed(3)}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xs w-8">-1</span>
-                          <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
-                            <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
-                            <div
-                              className="bg-accent h-4 rounded-full transition-all duration-100 absolute"
-                              style={{
-                                left:
-                                  gamepad.axes[4] >= 0
-                                    ? "50%"
-                                    : `${50 + gamepad.axes[4] * 50}%`,
-                                width: `${Math.abs(gamepad.axes[4]) * 50}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs w-8">+1</span>
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-accent">
+                          Yaw (Axis 4)
+                        </span>
+                        <span className="font-mono text-xs text-gray-400">
+                          {axes.yaw.toFixed(3)}
+                        </span>
                       </div>
-                    )}
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs w-8">-1</span>
+                        <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
+                          <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
+                          <div
+                            className="bg-accent h-4 rounded-full transition-all duration-100 absolute"
+                            style={{
+                              left:
+                                axes.yaw >= 0
+                                  ? "50%"
+                                  : `${50 + axes.yaw * 50}%`,
+                              width: `${Math.abs(axes.yaw) * 50}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-xs w-8">+1</span>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -190,66 +144,62 @@ export default function GamepadDemo() {
                   </h3>
                   <div className="space-y-6">
                     {/* Pitch - Axis 1 */}
-                    {gamepad.axes[1] !== undefined && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-secondary">
-                            Pitch{" "}
-                          </span>
-                          <span className="font-mono text-xs text-gray-400">
-                            {gamepad.axes[1].toFixed(3)}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xs w-8">-1</span>
-                          <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
-                            <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
-                            <div
-                              className="bg-secondary h-4 rounded-full transition-all duration-100 absolute"
-                              style={{
-                                left:
-                                  gamepad.axes[1] >= 0
-                                    ? "50%"
-                                    : `${50 + gamepad.axes[1] * 50}%`,
-                                width: `${Math.abs(gamepad.axes[1]) * 50}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs w-8">+1</span>
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-secondary">
+                          Pitch{" "}
+                        </span>
+                        <span className="font-mono text-xs text-gray-400">
+                          {axes.pitch.toFixed(3)}
+                        </span>
                       </div>
-                    )}
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs w-8">-1</span>
+                        <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
+                          <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
+                          <div
+                            className="bg-secondary h-4 rounded-full transition-all duration-100 absolute"
+                            style={{
+                              left:
+                                axes.pitch >= 0
+                                  ? "50%"
+                                  : `${50 + axes.pitch * 50}%`,
+                              width: `${Math.abs(axes.pitch) * 50}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-xs w-8">+1</span>
+                      </div>
+                    </div>
 
                     {/* Roll - Axis 0 */}
-                    {gamepad.axes[0] !== undefined && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-primary">
-                            Roll
-                          </span>
-                          <span className="font-mono text-xs text-gray-400">
-                            {gamepad.axes[0].toFixed(3)}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xs w-8">-1</span>
-                          <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
-                            <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
-                            <div
-                              className="bg-primary h-4 rounded-full transition-all duration-100 absolute"
-                              style={{
-                                left:
-                                  gamepad.axes[0] >= 0
-                                    ? "50%"
-                                    : `${50 + gamepad.axes[0] * 50}%`,
-                                width: `${Math.abs(gamepad.axes[0]) * 50}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs w-8">+1</span>
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-primary">
+                          Roll
+                        </span>
+                        <span className="font-mono text-xs text-gray-400">
+                          {axes.roll.toFixed(3)}
+                        </span>
                       </div>
-                    )}
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs w-8">-1</span>
+                        <div className="flex-1 bg-gray-700 rounded-full h-4 relative">
+                          <div className="absolute left-1/2 top-0 w-0.5 h-4 bg-gray-500"></div>
+                          <div
+                            className="bg-primary h-4 rounded-full transition-all duration-100 absolute"
+                            style={{
+                              left:
+                                axes.roll >= 0
+                                  ? "50%"
+                                  : `${50 + axes.roll * 50}%`,
+                              width: `${Math.abs(axes.roll) * 50}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <span className="text-xs w-8">+1</span>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -266,22 +216,22 @@ export default function GamepadDemo() {
                   <div className="bg-gray-700 p-3 rounded">
                     <div className="text-gray-400 mb-1">ID:</div>
                     <div className="font-mono text-xs truncate">
-                      {gamepad.id}
+                      {controller.id}
                     </div>
                   </div>
                   <div className="bg-gray-700 p-3 rounded">
                     <div className="text-gray-400 mb-1">Mapping:</div>
-                    <div className="font-mono text-xs">{gamepad.mapping}</div>
+                    <div className="font-mono text-xs">{controller.mapping}</div>
                   </div>
                   <div className="bg-gray-700 p-3 rounded">
                     <div className="text-gray-400 mb-1">Timestamp:</div>
                     <div className="font-mono text-xs">
-                      {gamepad.timestamp.toFixed(3)}
+                      {controller.timestamp.toFixed(3)}
                     </div>
                   </div>
                   <div className="bg-gray-700 p-3 rounded">
                     <div className="text-gray-400 mb-1">Index:</div>
-                    <div className="font-mono text-xs">{gamepad.index}</div>
+                    <div className="font-mono text-xs">{controller.index}</div>
                   </div>
                 </div>
               </CardContent>
